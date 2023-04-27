@@ -2,6 +2,8 @@
 
 namespace App\model;
 
+use Tecnickcom\tcpdf;
+
 /*
 I efterhand inser jag att det hade varit enklare att skapa en funktion som hämntar titel och författare
 första gången boken läggs in och sedan lagrar det i databasen istället för att hämta det på nytt varje
@@ -165,6 +167,31 @@ class model_startpage
         }
 
         return $filteredData;
+    }
+
+    public function generate_barcodes($numbers) {
+        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->AddPage();
+        $pdf->SetFont('helvetica', '', 10);
+        $x = 10;
+        $y = 10;
+        foreach ($numbers as $number) {
+            $barcodeobj = new TCPDFBarcode($number, 'C128');
+            $barcode = $barcodeobj->getBarcodePNG(1, 25, array(0,0,0));
+            $pdf->Image('@' . $barcode, $x, $y, 35, 10, 'PNG');
+            $pdf->Text($x, $y+12, $number);
+            $x += 40;
+            if ($x > 170) {
+                $x = 10;
+                $y += 25;
+                if ($y > 250) {
+                    $pdf->AddPage();
+                    $y = 10;
+                }
+            }
+        }
+        $pdf->Output('barcodes.pdf', 'D');
     }
 
     public function deleteBook($bokId)

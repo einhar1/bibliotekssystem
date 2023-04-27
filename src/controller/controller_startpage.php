@@ -83,6 +83,7 @@ class controller_startpage {
             }
         } else {
             $this->view->paintLoginNeeded();
+            $this->model->generate_barcodes([3409818409, 2038458034, 83485933495, 3257893499, 324789573489]);
         }
         $this->view->paintBottom();
     }

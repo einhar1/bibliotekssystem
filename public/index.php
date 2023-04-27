@@ -1,7 +1,7 @@
 <?php
 require '../vendor/autoload.php';
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
+ini_set('display_errors', E_ALL);
+ini_set('display_startup_errors', E_ALL);
 header("Access-Control-Allow-Origin: *");
 header('Content-Type:text/html; charset=UTF-8');
 //ladda om sidan var 900:de sekund för att kontrollera om sessionen gått ut
