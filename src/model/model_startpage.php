@@ -2,7 +2,7 @@
 
 namespace App\model;
 
-use Tecnickcom\tcpdf;
+use TCPDF;
 
 /*
 I efterhand inser jag att det hade varit enklare att skapa en funktion som hämntar titel och författare
@@ -141,7 +141,7 @@ class model_startpage
         return $filteredData;
     }
 
-    public function matain($ISBN)
+    public function matain($ISBN, $antal)
     {
         $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $ISBN . "&format=json");
 
@@ -150,14 +150,15 @@ class model_startpage
         if (empty($decodedData->{'xsearch'}->{'list'}[0]->{'title'})) {
             return "fel";
         } else {
-            $streckkodsnr = $this->db->mataIn($ISBN);
+            $streckkodsnr = $this->db->mataIn($ISBN, $antal);
         }
 
         $filteredData = array(
             'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
             'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
             'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'},
-            'streckkodsnr' => $streckkodsnr
+            'streckkodsnr' => $streckkodsnr,
+            'antal' => $antal
         );
 
         if ($filteredData['author'] != null) {
@@ -169,29 +170,80 @@ class model_startpage
         return $filteredData;
     }
 
-    public function generate_barcodes($numbers) {
-        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-        $pdf->SetMargins(10, 10, 10);
-        $pdf->AddPage();
-        $pdf->SetFont('helvetica', '', 10);
-        $x = 10;
-        $y = 10;
-        foreach ($numbers as $number) {
-            $barcodeobj = new TCPDFBarcode($number, 'C128');
-            $barcode = $barcodeobj->getBarcodePNG(1, 25, array(0,0,0));
-            $pdf->Image('@' . $barcode, $x, $y, 35, 10, 'PNG');
-            $pdf->Text($x, $y+12, $number);
-            $x += 40;
-            if ($x > 170) {
-                $x = 10;
-                $y += 25;
-                if ($y > 250) {
-                    $pdf->AddPage();
-                    $y = 10;
-                }
-            }
+    public function generatePDF($nummer, $antal)
+    {
+        // create new PDF document
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+        // set document information
+        $pdf->setCreator(PDF_CREATOR);
+        $pdf->setAuthor('Einar Harri');
+        $pdf->setTitle('Streckkoder');
+
+        // set default header data
+        $pdf->setHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE . ' 027', PDF_HEADER_STRING);
+
+        // set header and footer fonts
+        $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+        $pdf->setFooterFont(array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+
+        // set default monospaced font
+        $pdf->setDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+        // set margins
+        $pdf->setMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+        $pdf->setHeaderMargin(PDF_MARGIN_HEADER);
+        $pdf->setFooterMargin(PDF_MARGIN_FOOTER);
+
+        // set auto page breaks
+        $pdf->setAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+        // set image scale factor
+        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+        // set some language-dependent strings (optional)
+        if (@file_exists(dirname(__FILE__) . '/lang/eng.php')) {
+            require_once(dirname(__FILE__) . '/lang/eng.php');
+            $pdf->setLanguageArray($l);
         }
-        $pdf->Output('barcodes.pdf', 'D');
+
+        // ---------------------------------------------------------
+
+        // set a barcode on the page footer
+        $pdf->setBarcode(date('Y-m-d H:i:s'));
+
+        // set font
+        $pdf->setFont('helvetica', '', 11);
+
+        // add a page
+        $pdf->AddPage();
+
+        $pdf->setFont('helvetica', '', 10);
+
+        // define barcode style
+        $style = array(
+            'position' => '',
+            'align' => 'C',
+            'stretch' => false,
+            'fitwidth' => true,
+            'cellfitalign' => '',
+            'border' => false,
+            'hpadding' => 'auto',
+            'vpadding' => 'auto',
+            'fgcolor' => array(0, 0, 0),
+            'bgcolor' => false, //array(255,255,255),
+            'text' => true,
+            'font' => 'helvetica',
+            'fontsize' => 8,
+            'stretchtext' => 4
+        );
+
+        for ($i=0; $i < $antal; $i++) {
+            $pdf->write1DBarcode(strval($nummer-$i), 'MSI', '', '', '', 18, 0.4, $style, 'N');
+        }
+
+        //Close and output PDF document
+        $pdf->Output('streckkoder.pdf', 'I');
     }
 
     public function deleteBook($bokId)

@@ -82,18 +82,24 @@ class controller_startpage {
                 $this->view->paintMinSida($arrBooks);
             }
         } else {
-            $this->view->paintLoginNeeded();
-            $this->model->generate_barcodes([3409818409, 2038458034, 83485933495, 3257893499, 324789573489]);
+            //$this->view->paintLoginNeeded();
+            //$this->model->generate_barcodes([3409818409, 2038458034, 83485933495, 3257893499, 324789573489]);
+            //$this->model->generatePDF();
         }
         $this->view->paintBottom();
+    }
+
+    public function pdf($nummer, $antal)
+    {
+        $this->model->generatePDF($nummer, $antal);
     }
 
     public function matain()
     {
         $this->view->paintTop("matain");
         if (isset($_SESSION['username']) and $_SESSION['role'] == "admin") {
-            if (isset($_POST['isbn'])) {
-                $bok = $this->model->matain(htmlspecialchars($_POST['isbn']));
+            if (isset($_POST['isbn']) and isset($_POST['antal'])) {
+                $bok = $this->model->matain(htmlspecialchars($_POST['isbn']), htmlspecialchars($_POST['antal']));
                 if ($bok == "fel") {
                     $this->view->paintErrMataIn($bok);
                 } else {

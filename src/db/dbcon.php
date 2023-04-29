@@ -105,9 +105,11 @@ class dbcon
         }
         return $result;
     }
-    public function mataIn($ISBN)
+    public function mataIn($ISBN, $antal)
     { 
-        $this->pdo->query("INSERT INTO `böcker` (`streckkodsnr_pk`, `ISBN`, `status`) VALUES (NULL, '" . $ISBN . "', 'tillgänglig')");
+        for ($i=0; $i < $antal; $i++) {
+            $this->pdo->query("INSERT INTO `böcker` (`streckkodsnr_pk`, `ISBN`, `status`) VALUES (NULL, '" . $ISBN . "', 'tillgänglig')");
+        }
         return $this->pdo->lastInsertId();
     }
     public function deleteBook($bokId)

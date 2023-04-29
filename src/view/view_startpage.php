@@ -164,7 +164,15 @@ class view_startpage
     }
     public function paintConfMataIn($utlan)
     {
-        echo "<h5>Du har nu matat in <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b>" . $utlan['var2'] . "<b>" . $utlan["author"] . "</b> i systemet. Bokens tilldelade streckkodsnummer är <b>" . $utlan["streckkodsnr"] . "</b>.</h5>";
+        echo "<h5>Du har nu matat in <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b>" . $utlan['var2'] . "<b>" . $utlan["author"] . "</b> i systemet. Bokens tilldelade streckkodsnummer är <b>" . $utlan["streckkodsnr"] . "</b>.</h5>
+        <div class='m-2'>
+        <form action='matain' method='POST'>
+            <div class='mb-3 mt-3'>
+                <input type='number' name='barcode' class='form-control' value='" . $utlan["streckkodsnr"] . "' hidden>
+                <input type='number' name='amount' class='form-control' value='" . $utlan["antal"] . "' hidden>
+                <button type='submit'>Skriv ut pdf</button>
+            </div>
+        </form></div>";
     }
     public function paintConfRadera($utlan)
     {
@@ -186,11 +194,15 @@ class view_startpage
     {
         echo <<< ARTICLE
         <div class="m-2">
-        Vänligen skanna boken du vill mata in i systemet.
+        Vänligen skanna boken du vill mata in i systemet och ange antalet likadana böcker.
         <form action="matain" method="POST">
             <div class="mb-3 mt-3">
                 <input type="number" name="isbn" class="form-control" placeholder="ISBN" autofocus>
             </div>
+            <div class="mb-3 mt-3">
+                <input type="number" name="antal" class="form-control" placeholder="Antal">
+            </div>
+            <button class="btn btn-primary" type="submit">Submit</button>
         </form></div>
         ARTICLE;
     }

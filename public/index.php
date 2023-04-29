@@ -52,6 +52,10 @@ if (isset($_POST['username']) and isset($_POST['password'])) {
     }
 }
 
+if (isset($_POST['barcode']) and isset($_POST['amount'])) {
+    $controller->pdf($_POST['barcode'], $_POST['amount']);
+}
+
 if ($login == true) {
     if ($url_parts[4] == "start") {
         $controller->start();
