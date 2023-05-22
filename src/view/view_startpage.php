@@ -226,7 +226,7 @@ class view_startpage
         Vänligen skanna ditt id-kort.
         <form action="$var" method="POST">
             <div class="mb-3 mt-3">
-                <input type="password" name="kortid" class="form-control" autofocus required>
+                <input type="password" id="kort" name="kortid" autofocus required style="color: transparent; outline: none; border: none; cursor: default">
             </div>
         </form>
         ARTICLE;

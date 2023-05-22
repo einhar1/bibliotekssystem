@@ -66,7 +66,9 @@ class topbottom
                         order: [[ 1, "asc" ]],
                         columnDefs: [{ orderable: false, targets: 4 }]
                     });
-                    
+                    $("#kort").blur(function(){
+                        $("#kort").focus();
+                    });
                 });
             </script>
             <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
