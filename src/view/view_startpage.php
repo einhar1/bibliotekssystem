@@ -63,6 +63,7 @@ class view_startpage
                 <td>" . $value['countTot'] . "</td>
                 <td><button onclick='clickDel(" . $value['ISBN'] . ")' type='button' id='confbtn' class='btn btn-danger' data-bs-toggle='modal' data-bs-target='#modalConf'>Radera</button></td>
                 </tr>";
+            //jag är medveten om att jag har inline javascript här, men jag hitade inget annat sätt att skicka med ISBN-nummret till funktionen.
         }
         echo <<< ARTIKEL
                 </tbody>
@@ -226,7 +227,7 @@ class view_startpage
         Vänligen skanna ditt id-kort.
         <form action="$var" method="POST">
             <div class="mb-3 mt-3">
-                <input type="password" id="kort" name="kortid" autofocus required style="color: transparent; outline: none; border: none; cursor: default">
+                <input type="password" id="kort" name="kortid" autofocus required>
             </div>
         </form>
         ARTICLE;

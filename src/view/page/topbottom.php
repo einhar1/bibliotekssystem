@@ -52,6 +52,13 @@ class topbottom
                 visibility: visible;
             }
 
+            #kort {
+                color: transparent;
+                outline: none;
+                border: none;
+                cursor: default;
+            }
+
         </style>
 
         <body>
