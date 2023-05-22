@@ -22,19 +22,34 @@ class view_startpage
     {
         $this->topbottom->bottom();
     }
+    public function paintWelcome()
+    {
+        echo <<< ARTIKEL
+            <h1>Välkommen till teknikprogrammets bibliotek!</h1><br>
+            <h4>Här kan du låna och lämna tillbaka skolböcker.</h4>
+            ARTIKEL;
+    }
+    public function paintWelcomeAdm()
+    {
+        echo <<< ARTIKEL
+            <h1>Välkommen till teknikprogrammets bibliotek!</h1><br>
+            <h4>Här kan du som är lärare se utlånade böcker och lägga in nya böcker i systemet.</h4>
+            ARTIKEL;
+    }
     public function paintBooks($arrBooks)
     {
 
         echo <<< ARTIKEL
-            <h1>Hej och välkommen till biblioteket!</h1><br>
-            <h3><u>Följande böcker finns tillgängliga för utlån.</u></h3>
-            <table class="table">
+            <h3><u>Följande böcker finns att låna.</u></h3>
+            Knappen "Radera" raderar alla exemplar av den aktuella boken.<br>
+            <table class="table table-hover" id="utlan2">
                 <thead>
                     <tr>
                     <th scope="col">ISBN</th>
                     <th scope="col">Titel</th>
-                    <th scope="col">Författare</th>
-                    <th scope="col">Antal tillgängliga</th>
+                    <th scope="col">Tillgängliga</th>
+                    <th scope="col">Totalt</th>
+                    <th scope="col"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,8 +59,9 @@ class view_startpage
                 <tr>
                 <th scope='row'><a target='blank' class='link' href='" . $value['identifier'] . "'>" . $value['ISBN'] . "</a></th>
                 <td>" . $value['title'] . "</td>
-                <td>" . $value['author'] . "</td>
-                <td>" . $value['count'] . "</td>
+                <td>" . $value['countAv'] . "</td>
+                <td>" . $value['countTot'] . "</td>
+                <td><button onclick='clickDel(" . $value['ISBN'] . ")' type='button' id='confbtn' class='btn btn-danger' data-bs-toggle='modal' data-bs-target='#modalConf'>Radera</button></td>
                 </tr>";
         }
         echo <<< ARTIKEL
@@ -56,16 +72,14 @@ class view_startpage
 
     public function paintMinSida($arrBooks)
     {
-
         echo <<< ARTIKEL
-            <h3><u>Du har följande böcker hemma.</u></h3>
-            <table class="table">
+            <h3><u>Du lånat följande böcker.</u></h3>
+            <table class="table table-hover" id="utlan">
                 <thead>
                     <tr>
                     <th scope="col">Streckkodsnummer</th>
                     <th scope="col">Titel</th>
-                    <th scope="col">Författare</th>
-                    <th scope="col">Lånad den</th>
+                    <th scope="col">Datum</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,7 +89,6 @@ class view_startpage
                     <tr>
                     <th scope='row'>" . $value['streckkodsnr'] . "</th>
                     <td><a target='blank' class='link' href='" . $value['identifier'] . "'>" . $value['title'] . "</a></td>
-                    <td>" . $value['author'] . "</td>
                     <td>" . $value['date'] . "</td>
                     </tr>
                 ";
@@ -90,14 +103,13 @@ class view_startpage
     {
         echo <<< ARTIKEL
             <h3><u>Följande böcker är just nu utlånade.</u></h3>
-            <table class="table">
+            <table class="table table-hover" id="utlan">
                 <thead>
                     <tr>
                     <th scope="col">Streckkodsnummer</th>
                     <th scope="col">Titel</th>
-                    <th scope="col">Författare</th>
                     <th scope="col">Lånad av</th>
-                    <th scope="col">Lånad den</th>
+                    <th scope="col">Datum</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -107,7 +119,6 @@ class view_startpage
                     <tr>
                     <th scope='row'>" . $value['streckkodsnr'] . "</th>
                     <td><a target='blank' class='link' href='" . $value['identifier'] . "'>" . $value['title'] . "</a></td>
-                    <td>" . $value['author'] . "</td>
                     <td>" . $value['namn'] . "</td>
                     <td>" . $value['date'] . "</td>
                     </tr>
@@ -122,21 +133,32 @@ class view_startpage
     //några av dessa funktioner är sammanslagna för både utlåning och återlämning.
     //det är därför variabeln $var finns med för att skriva ut "låna" eller "lämna"
 
-    public function paintUtlan($var)
+    public function paintUtlan($data)
     {
-        if ($var == "låna") {
-            $lanalamna = "lana";
-        } elseif ($var == "lämna tillbaka") {
-            $lanalamna = "lamna";
-        }
+        $namn = $data[0]['namn'];
+        $kortid = $data[0]['lånekortsnr_pk'];
         echo <<< ARTICLE
-        <div class="m-2">
-        Vänligen skanna boken du vill $var.
-        <form action="$lanalamna" method="POST">
+        Inloggad som $namn.<br>
+        Vänligen skanna boken du vill låna.
+        <form action="lana" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus>
+                <input type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus rquired>
+                <input type="text" name="kortid" class="form-control" value="$kortid" hidden>
+                <input type="submit" hidden>
             </div>
-        </form></div>
+        </form>
+        ARTICLE;
+    }
+
+    public function paintLamna()
+    {
+        echo <<< ARTICLE
+        Vänligen skanna boken du vill lämna tillbaka.
+        <form action="lamna" method="POST">
+            <div class="mb-3 mt-3">
+                <input type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus required>
+            </div>
+        </form>
         ARTICLE;
     }
 
@@ -154,81 +176,93 @@ class view_startpage
     {
         echo "<h5>Ogilltit streckkodsnummer!</h5>";
     }
-    public function paintFelAnvandare()
+    public function paintConf($utlan, $var, $namn)
     {
-        echo "<h5>Du kan inte lämna tillbaka en bok som någon annan har lånat!</h5>";
+        echo "<h5>Du (" . $namn . ") har nu " . $var . " <b>" . $utlan["title"] . "</b></h5>";
     }
-    public function paintConf($utlan, $var)
+    public function paintConfMataIn($utlan, $antal)
     {
-        echo "<h5>Du har nu " . $var . " <b>" . $utlan["title"] . "</b>" . $utlan['var2'] . "<b>" . $utlan["author"] . "</b></h5>";
-    }
-    public function paintConfMataIn($utlan)
-    {
-        echo "<h5>Du har nu matat in <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b>" . $utlan['var2'] . "<b>" . $utlan["author"] . "</b> i systemet. Bokens tilldelade streckkodsnummer är <b>" . $utlan["streckkodsnr"] . "</b>.</h5>
-        <div class='m-2'>
-        <form action='matain' method='POST'>
+        echo "<h5>Du har lagt in $antal exemplar av <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b> i systemet.</h5>
+        <b>Varje bok har blivit tilldelad ett unikt streckkodsnummer. Klicka på knappen nedan för att skriva ut streckkoderna och klistra sedan fast en streckkod på varje bok.</b>
+        <form action='matain' target='_blank' method='POST'>
             <div class='mb-3 mt-3'>
                 <input type='number' name='barcode' class='form-control' value='" . $utlan["streckkodsnr"] . "' hidden>
                 <input type='number' name='amount' class='form-control' value='" . $utlan["antal"] . "' hidden>
-                <button type='submit'>Skriv ut pdf</button>
+                <input type='text' name='titel' class='form-control' value='" . $utlan["title"] . "' hidden>
+                <button type='submit' class='btn btn-primary'>Skriv ut streckkoder</button>
             </div>
-        </form></div>";
+        </form>";
     }
     public function paintConfRadera($utlan)
     {
-        echo "<h5>Du har nu tagit bort <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b>" . $utlan['var2'] . "<b>" . $utlan["author"] . "</b> med streckkodsnummer <b>" . $utlan["streckkodsnr"] . "</b> från systemet</h5>";
+        echo "<h5>Du har nu raderat <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b> med streckkodsnummer <b>" . $utlan["streckkodsnr"] . "</b>.</h5>";
+    }
+    public function paintConfRaderaAll($utlan)
+    {
+        echo "<h5>Du har nu raderat " . $utlan['antal'] . " exemplar av <b><a target='blank' class='link' href='" . $utlan['identifier'] . "'>" . $utlan["title"] . "</a></b> med ISBN-nummret <b>" . $utlan["ISBN"] . "</b>.</h5>";
     }
     public function paintErrMataIn()
     {
         echo "<h5>Ogilltit ISBN-nummer! (finns inte i Libris databas)</h5>";
     }
-    public function paintErrRadera1()
-    {
-        echo "<h5>Den här boken finns inte i systemet!</h5>";
-    }
-    public function paintErrRadera2()
-    {
-        echo "<h5>Du kan inte ta bort en bok som är utlånad!</h5>";
-    }
     public function paintForm()
     {
         echo <<< ARTICLE
-        <div class="m-2">
-        Vänligen skanna boken du vill mata in i systemet och ange antalet likadana böcker.
+        Vänligen skanna boken du vill lägga till och ange antal exemplar.
         <form action="matain" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="isbn" class="form-control" placeholder="ISBN" autofocus>
+                <input type="number" name="isbn" class="form-control" placeholder="ISBN" autofocus required>
             </div>
             <div class="mb-3 mt-3">
-                <input type="number" name="antal" class="form-control" placeholder="Antal">
+                <input type="number" name="antal" class="form-control" placeholder="Antal" required>
             </div>
-            <button class="btn btn-primary" type="submit">Submit</button>
-        </form></div>
+            <button class="btn btn-primary" type="submit">Lägg till</button>
+        </form>
+        ARTICLE;
+    }
+    public function paintLogin($var)
+    {
+        echo <<< ARTICLE
+        Vänligen skanna ditt id-kort.
+        <form action="$var" method="POST">
+            <div class="mb-3 mt-3">
+                <input type="password" name="kortid" class="form-control" autofocus required>
+            </div>
+        </form>
+        ARTICLE;
+    }
+    public function paintNewUsr($kortid)
+    {
+        echo <<< ARTICLE
+        Skriv in ditt för- och efternamn för att skapa ett nytt användarkonto.
+        <form action="lana" method="POST">
+            <div class="mb-3 mt-3">
+                <input type="text" name="namn" placeholder="Namn" class="form-control" autofocus required>
+                <input type="text" name="kortid" class="form-control" value="$kortid" hidden>
+                <input type="submit" hidden>
+            </div>
+        </form>
         ARTICLE;
     }
     public function paintFormDel()
     {
         // Har ingen autofocus på radera-fliken för att förhindra att man raderar av misstag
         echo <<< ARTICLE
-        <div class="m-2">
-        Vänligen skanna boken du vill ta bort från systemet systemet.
+        Vänligen skanna boken du vill ta bort.
+        <br>OBS! Den här funktionen tar endast bort det skannade exemplaret, för att ta bort alla exemplar av en bok, använd knappen "Radera" i listan över böcker.
         <form action="radera" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="bokId" class="form-control" placeholder="Streckkodsnummer">
+                <input type="number" name="bokId" class="form-control" placeholder="Streckkodsnummer" required>
             </div>
-        </form></div>
+        </form>
         ARTICLE;
     }
     public function paintInloggErr()
     {
-        echo "<h4 class='m-2'>Felaktiga inloggningsuppgifter!</h4>";
-    }
-    public function paintLoginNeeded()
-    {
-        echo "Du måste logga in med ditt lånekortsnummer för att kunna använda den här funktionen";
+        echo "<h4 class='text-danger'>Fel lösenord!</h4>";
     }
     public function paintAdmNeeded()
     {
-        echo "Du måste vara administratör för att kunna använda den här funktionen";
+        echo "Du måste logga in som lärare för att kunna använda den här funktionen.";
     }
 }

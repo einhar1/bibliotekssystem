@@ -31,19 +31,13 @@ class model_startpage
 
         foreach ($books as $key => $book) {
             
-            //hämta data från API:t
-            $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $book["ISBN"] . "&format=json");
-            
-            $decodedData = json_decode($data);
-
-            //lägg in datan i en array
             $filteredData[$key] = array(
                 'ISBN' => $book["ISBN"],
                 'bokId' => $book["streckkodsnr_pk"],
-                'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-                'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
-                'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'},
-                'count' => $book["tillgänglig"]
+                'title' => $book["titel"],
+                'identifier' => $book["identifier"],
+                'countAv' => $book["tillgänglig"],
+                'countTot' => $book["totalt"]
             );
 
         }
@@ -56,61 +50,57 @@ class model_startpage
         return $filteredData;
     }
 
-    public function lana($bokId, $var)
+    public function lana($bokId, $var, $kortid)
     {
         if ($var == "utlånad") {
-            $ISBN = $this->db->lanaBok($bokId);
+            $data = $this->db->lanaBok($bokId, $kortid);
+            if (is_array($data)) {
+                $bokinfo = $data['bok'];
+                $kortid = $data['namn'];
+            } else {
+                $bokinfo = $data;
+            }
         } elseif ($var == "tillgänglig") {
-            $ISBN = $this->db->lamnaBok($bokId);
+            $data = $this->db->lamnaBok($bokId);
+            if (is_array($data)) {
+                $bokinfo = $data['bok'];
+                $kortid = $data['namn'];
+            } else {
+                $bokinfo = $data;
+            }
         }
 
-        if ($ISBN == "fel") {
+        if ($bokinfo == "fel") {
             return "fel";
-        } elseif ($ISBN == "fel2") {
+        } elseif ($bokinfo == "fel2") {
             return "fel2";
-        } elseif ($ISBN == "fel3") {
+        } elseif ($bokinfo == "fel3") {
             return "fel3";
-        } elseif ($ISBN == "felanvändare") {
+        } elseif ($bokinfo == "felanvändare") {
             return "felanvändare";
         } else {
-            $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $ISBN . "&format=json");
-
-            $decodedData = json_decode($data);
-
+            
             $filteredData = array(
-                'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-                'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
-                'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'}
+                'title' => $bokinfo[0]["titel"],
+                'identifier' => $bokinfo[0]["identifier"],
+                'kortid' => $kortid
             );
-
-            if ($filteredData['author'] != null) {
-                $filteredData['var2'] = " av ";
-            } else {
-                $filteredData['var2'] = " ";
-            }
 
             return $filteredData;
         }
     }
     
-    public function minSida()
+    public function minSida($kortid)
     {
-        $books = $this->db->hemlan();
+        $books = $this->db->hemlan($kortid);
 
         foreach ($books as $key => $book) {
-
-            $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $book[0]["ISBN"] . "&format=json");
-
-            $decodedData = json_decode($data);
-
             $filteredData[$key] = array(
                 'streckkodsnr' => $book[0]["streckkodsnr_pk"],
                 'date' => substr($book[0]["date"], 0, 10), //ta bort tiden från utlåningsdatumet
-                'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-                'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
-                'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'}
+                'title' => $book[0]["titel"],
+                'identifier' => $book[0]["identifier"]
             );
-
         }
         
         return $filteredData;
@@ -118,27 +108,7 @@ class model_startpage
 
     public function minSidaAdm()
     {
-        $results = $this->db->minSidaAdm();
-
-        foreach ($results as $key => $book) {
-
-            $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $book["ISBN"] . "&format=json");
-
-            $decodedData = json_decode($data);
-
-            $filteredData[$key] = array(
-                'ISBN' => $book["ISBN"],
-                'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-                'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
-                'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'},
-                'streckkodsnr' => $book["streckkodsnr"],
-                'namn' => $book["namn"],
-                'date' => substr($book["date"], 0, 10) //filtrera bort tiden från utlåningsdatumet
-            );
-
-        }
-
-        return $filteredData;
+        return $this->db->minSidaAdm();
     }
 
     public function matain($ISBN, $antal)
@@ -149,28 +119,23 @@ class model_startpage
 
         if (empty($decodedData->{'xsearch'}->{'list'}[0]->{'title'})) {
             return "fel";
-        } else {
-            $streckkodsnr = $this->db->mataIn($ISBN, $antal);
         }
+
+        $titel = $decodedData->{'xsearch'}->{'list'}[0]->{'title'};
+        $identifier = $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'};
+        $streckkodsnr = $this->db->mataIn($ISBN, $antal, $titel, $identifier);
 
         $filteredData = array(
             'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-            'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
             'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'},
             'streckkodsnr' => $streckkodsnr,
             'antal' => $antal
         );
 
-        if ($filteredData['author'] != null) {
-            $filteredData['var2'] = " av ";
-        } else {
-            $filteredData['var2'] = " ";
-        }
-
         return $filteredData;
     }
 
-    public function generatePDF($nummer, $antal)
+    public function generatePDF($nummer, $antal, $titel)
     {
         // create new PDF document
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -181,7 +146,7 @@ class model_startpage
         $pdf->setTitle('Streckkoder');
 
         // set default header data
-        $pdf->setHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE . ' 027', PDF_HEADER_STRING);
+        $pdf->setHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, 'Streckkoder för "' . $titel . '"', 'Klistra streckkoderna på böckerna');
 
         // set header and footer fonts
         $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
@@ -202,8 +167,8 @@ class model_startpage
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 
         // set some language-dependent strings (optional)
-        if (@file_exists(dirname(__FILE__) . '/lang/eng.php')) {
-            require_once(dirname(__FILE__) . '/lang/eng.php');
+        if (@file_exists(dirname(__FILE__) . '/lang/sv.php')) {
+            require_once(dirname(__FILE__) . '/lang/sv.php');
             $pdf->setLanguageArray($l);
         }
 
@@ -214,9 +179,6 @@ class model_startpage
 
         // set font
         $pdf->setFont('helvetica', '', 11);
-
-        // add a page
-        $pdf->AddPage();
 
         $pdf->setFont('helvetica', '', 10);
 
@@ -238,57 +200,67 @@ class model_startpage
             'stretchtext' => 4
         );
 
-        for ($i=0; $i < $antal; $i++) {
-            $pdf->write1DBarcode(strval($nummer-$i), 'MSI', '', '', '', 18, 0.4, $style, 'N');
+        $v = 0;
+        while (true) {
+            $pdf->AddPage();
+            for ($k = 0; $k < 10; $k++) {
+                for ($i = 0; $i < 3; $i++) {
+                    $pdf->write1DBarcode(strval($nummer - $v), 'MSI', $i * 60 + 11, $k * 23 + 25, '', 18, 0.4, $style, 'N');
+                    $v++;
+                    if ($v == $antal) {
+                        break 3;
+                    }
+                }
+            }
         }
 
         //Close and output PDF document
         $pdf->Output('streckkoder.pdf', 'I');
     }
 
-    public function deleteBook($bokId)
+    public function deleteBook($bokId, $var)
     {
-        $ISBN = $this->db->deleteBook($bokId);
-        if ($ISBN == "fel1") {
+        if ($var == "one") {
+            $data = $this->db->deleteBook($bokId);
+        } elseif ($var == "all") {
+            $data = $this->db->deleteBookAll($bokId);
+        }
+        
+        if ($data == "fel1") {
             return "fel1";
-        } elseif ($ISBN == "fel2") {
-            return "fel2";
         } else {
-            $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $ISBN . "&format=json");
-
-            $decodedData = json_decode($data);
-
-            $filteredData = array(
-                'streckkodsnr' => $bokId,
-                'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-                'author' => $decodedData->{'xsearch'}->{'list'}[0]->{'creator'},
-                'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'}
-            );
-
-            if ($filteredData['author'] != null) {
-                $filteredData['var2'] = " av ";
-            } else {
-                $filteredData['var2'] = " ";
-            }
+            
+        $filteredData = array(
+            'streckkodsnr' => $bokId,
+            'title' => $data[0]["titel"],
+            'ISBN' => $data[0]["ISBN"],
+            'antal' => $data[0]["antal"],
+            'identifier' => $data[0]["identifier"]
+        );
 
             return $filteredData;
         }
     }
-
-    public function loggain($username, $password)
+    public function skapaKonto($kortid, $namn)
     {
-        $status = $this->db->loggain($username, $password);
+        $this->db->skapaKonto($kortid, $namn);
+    }
+    public function checkLogin($kortid)
+    {
+        $status = $this->db->checkLogin($kortid);
+        return $status;
+    }
+    public function loggain($password)
+    {
+        $status = $this->db->loggain($password);
         if ($status == "error") {
             return "error";
         } else {
             session_regenerate_id(true);
-            $_SESSION["username"] = $username;
-            $_SESSION["name"] = $status->namn;
-            $_SESSION["role"] = $status->roll;
+            $_SESSION["role"] = "admin";
             return "success";
         }
     }
-
     public function loggaut()
     {
         session_destroy();

@@ -33,26 +33,29 @@ class dbcon
 
     public function getBooks()
     {
-        $stmt = $this->pdo->query('SELECT * , sum(case `status` when "tillgänglig" then 1 else 0 end) tillgänglig FROM böcker group by ISBN');
+        $stmt = $this->pdo->query('SELECT * , sum(case `status` when "tillgänglig" then 1 else 0 end) "tillgänglig" , COUNT(*) "totalt" FROM böcker group by ISBN');
         return $stmt->fetchAll();
     }
-    public function lanaBok($bokId)
+    public function lanaBok($bokId, $kortid)
     {
         $stmt = $this->pdo->query('SELECT `status` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
         $status = $stmt->fetchColumn();
         
-        if ($status == "utlånad" and (empty($status) == false)) {
+        if ($status == "utlånad" and !empty($status)) {
             $stmt = $this->pdo->query('SELECT lånekortsnr_fk FROM utlån WHERE streckkodsnr_fk = ' . $bokId);
-            if ($stmt->fetchColumn() == $_SESSION['username']) {
+            if ($stmt->fetchColumn() == $kortid) {
                 return "fel2";
             } else {
                 return "fel";
             }
         } elseif ($status == "tillgänglig") {
             $this->pdo->query('UPDATE `böcker` SET `status` = "utlånad" WHERE `böcker`.`streckkodsnr_pk` = ' . $bokId);
-            $this->pdo->query('INSERT INTO `utlån` (`streckkodsnr_fk`, `lånekortsnr_fk`) VALUES (' . $bokId . ', ' . $_SESSION['username'] . ')');
-            $stmt = $this->pdo->query('SELECT `ISBN` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
-            return $stmt->fetchColumn();
+            $this->pdo->query('INSERT INTO `utlån` (`streckkodsnr_fk`, `lånekortsnr_fk`) VALUES (' . $bokId . ', "' . $kortid . '")');
+            $stmt = $this->pdo->query('SELECT `namn` FROM `låntagare` WHERE lånekortsnr_pk="' . $kortid . '"');
+            $data['namn'] = $stmt->fetchColumn();
+            $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
+            $data['bok'] = $stmt->fetchAll();
+            return $data;
         }
         return "fel3";
     }
@@ -64,20 +67,22 @@ class dbcon
         if ($status == "tillgänglig") {
             return "fel";
         } elseif ($status == "utlånad") {
-            $stmt = $this->pdo->query('SELECT * FROM utlån WHERE streckkodsnr_fk = ' . $bokId . ' AND lånekortsnr_fk = ' . $_SESSION['username']);
-            if (empty($stmt->fetchAll())) {
-                return "felanvändare";
-            } else {
-                $this->pdo->query('DELETE FROM utlån WHERE streckkodsnr_fk = ' . $bokId . ' AND lånekortsnr_fk = ' . $_SESSION['username']);
-                $this->pdo->query('UPDATE `böcker` SET `status` = "tillgänglig" WHERE `böcker`.`streckkodsnr_pk` = ' . $bokId);
-                $stmt = $this->pdo->query('SELECT `ISBN` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
-                return $stmt->fetchColumn();
-            }
+            $stmt = $this->pdo->query('SELECT `lånekortsnr_fk` FROM `utlån` WHERE streckkodsnr_fk=' . $bokId);
+            $kortid = $stmt->fetchColumn();
+            $stmt = $this->pdo->query('SELECT `namn` FROM `låntagare` WHERE lånekortsnr_pk="' . $kortid . '"');
+            $data['namn'] = $stmt->fetchColumn();
+            $this->pdo->query('DELETE FROM utlån WHERE streckkodsnr_fk = ' . $bokId);
+            $this->pdo->query('UPDATE `böcker` SET `status` = "tillgänglig" WHERE `böcker`.`streckkodsnr_pk` = ' . $bokId);
+            $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
+            $data['bok'] = $stmt->fetchAll();
+            return $data;
+        } else {
+            return "fel3";
         }
     }
-    public function hemlan()
+    public function hemlan($kortid)
     {
-        $stmt = $this->pdo->query('SELECT * FROM utlån where lånekortsnr_fk = ' . $_SESSION['username']);
+        $stmt = $this->pdo->query('SELECT * FROM utlån where lånekortsnr_fk = "' . $kortid . '"');
         $numbers = $stmt->fetchAll();
         foreach ($numbers as $key => $number) {
             $stmt = $this->pdo->query('SELECT * FROM böcker where streckkodsnr_pk = ' . $number['streckkodsnr_fk']);
@@ -88,60 +93,81 @@ class dbcon
     }
     public function minSidaAdm()
     {
-        $stmt = $this->pdo->query('SELECT * FROM utlån ORDER BY lånekortsnr_fk');
+        $stmt = $this->pdo->query('SELECT * FROM utlån');
         $utlans = $stmt->fetchAll();
         foreach ($utlans as $key => $utlan) {
-            $stmt = $this->pdo->query('SELECT namn FROM låntagare WHERE lånekortsnr_pk = ' . $utlan['lånekortsnr_fk']);
+            $stmt = $this->pdo->query('SELECT namn FROM låntagare WHERE lånekortsnr_pk = "' . $utlan['lånekortsnr_fk'] . '"');
             $namn = $stmt->fetchColumn();
-            $stmt = $this->pdo->query('SELECT ISBN FROM böcker WHERE streckkodsnr_pk = ' . $utlan['streckkodsnr_fk']);
-            $ISBN = $stmt->fetchColumn();
+            $stmt = $this->pdo->query('SELECT * FROM böcker WHERE streckkodsnr_pk = ' . $utlan['streckkodsnr_fk']);
+            $info = $stmt->fetchAll();
             $result[$key] = array(
                 'namn' => $namn,
-                'ISBN' => $ISBN,
-                'date' => $utlan['utlåningsdatum'],
+                'ISBN' => $info[0]['ISBN'],
+                'title' => $info[0]['titel'],
+                'identifier' => $info[0]['identifier'],
+                'date' => substr($utlan['utlåningsdatum'], 0, 10),
                 'kortnr' => $utlan['lånekortsnr_fk'],
                 'streckkodsnr' => $utlan['streckkodsnr_fk']
             );
         }
         return $result;
     }
-    public function mataIn($ISBN, $antal)
+    public function mataIn($ISBN, $antal, $titel, $identifier)
     { 
         for ($i=0; $i < $antal; $i++) {
-            $this->pdo->query("INSERT INTO `böcker` (`streckkodsnr_pk`, `ISBN`, `status`) VALUES (NULL, '" . $ISBN . "', 'tillgänglig')");
+            $this->pdo->query("INSERT INTO `böcker` (`streckkodsnr_pk`, `ISBN`, `titel`, `identifier`, `status`) VALUES (NULL, '" . $ISBN ."', '" . $titel ."', '" . $identifier . "', 'tillgänglig')");
         }
         return $this->pdo->lastInsertId();
     }
     public function deleteBook($bokId)
     {
-        $stmt = $this->pdo->query('SELECT `status` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
+        $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
         $status = $stmt->fetchColumn();
-        if ($status == "utlånad" and !empty($status)) {
-            return "fel2";
-        } elseif ($status == "tillgänglig") {
-            $stmt = $this->pdo->query("SELECT ISBN FROM böcker WHERE streckkodsnr_pk = " . $bokId);
+        if (!empty($status)) {
+            $stmt = $this->pdo->query("SELECT * FROM böcker WHERE streckkodsnr_pk = " . $bokId);
             $this->pdo->query("DELETE FROM böcker WHERE `böcker`.`streckkodsnr_pk` = " . $bokId);
-            return $stmt->fetchColumn();
+            $this->pdo->query("DELETE FROM utlån WHERE `streckkodsnr_fk` = " . $bokId);
+            return $stmt->fetchAll();
         } else {
             return "fel1";
         }
     }
-    public function loggain($username, $password)
+    public function deleteBookAll($bokId)
     {
-        try {
-            $stmt = $this->pdo->query('SELECT pin FROM låntagare WHERE lånekortsnr_pk = ' . $username);
-            $pass = $stmt->fetchColumn();
-            if (empty($pass)) {
-                return "error";
-            } elseif ($pass == $password) {
-                $stmt = $this->pdo->query('SELECT namn, roll FROM låntagare WHERE lånekortsnr_pk = ' . $username);
-                return $stmt->fetchObject();
-            } else {
-                return "error";
-            }
-        } catch (\Throwable $th) {
+        $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE ISBN = ' . $bokId);
+        $status = $stmt->fetchColumn();
+        if (!empty($status)) {
+            $stmt = $this->pdo->query("SELECT * FROM böcker WHERE ISBN = " . $bokId);
+            $data = $stmt->fetchAll();
+            $this->pdo->query("DELETE `utlån` FROM `utlån` INNER JOIN `böcker` ON `utlån`.`streckkodsnr_fk` = `böcker`.`streckkodsnr_pk` WHERE `böcker`.`ISBN` = " . $bokId);
+            $this->pdo->query("DELETE FROM böcker WHERE `böcker`.`ISBN` = " . $bokId);
+            $data[0]['antal'] = $this->pdo->query('SELECT ROW_COUNT()')->fetchColumn();
+            return $data;
+        } else {
+            return "fel1";
+        }
+    }
+    public function checkLogin($kortid)
+    {
+        $stmt = $this->pdo->query('SELECT * FROM `låntagare` WHERE `lånekortsnr_pk` = "' . $kortid . '"');
+        if (empty($stmt->fetchAll())) {
+            return "newusr";
+        } else {
+            $stmt = $this->pdo->query('SELECT * FROM `låntagare` WHERE `lånekortsnr_pk` = "' . $kortid . '"');
+            return $stmt->fetchAll();
+        }
+    }
+    public function skapaKonto($kortid, $namn)
+    {
+        $this->pdo->query("INSERT INTO `låntagare` (`lånekortsnr_pk`, `namn`) VALUES ('" . $kortid . "', '" . $namn . "')");
+    }
+    public function loggain($password)
+    {
+        $stmt = $this->pdo->query('SELECT * FROM `adminlösen`');
+        if ($stmt->fetchColumn() == $password) {
+            return "success";
+        } else {
             return "error";
         }
-        
     }
 }

@@ -17,9 +17,19 @@ class controller_startpage {
 
     public function start()
     {
+        $status = null;
+        if (isset($_POST['password'])) {
+            $status = $this->model->loggain(htmlspecialchars($_POST['password']));
+        }
         $this->view->paintTop("start");
-        $arrBooks = $this->model->getBookList();
-        $this->view->paintBooks($arrBooks);
+        if ($status == "error") {
+            $this->view->paintInloggErr();
+        }
+        if (isset($_SESSION['role'])) {
+            $this->view->paintWelcomeAdm();
+        } else {
+            $this->view->paintWelcome();
+        }
         $this->view->paintBottom();
     }
 
@@ -29,22 +39,31 @@ class controller_startpage {
     public function lana()
     {
         $this->view->paintTop("lana");
-        if (isset($_SESSION['username'])) {
-            if (isset($_POST['bokid'])) {
-                $utlan = $this->model->lana(htmlspecialchars($_POST['bokid']), "utlånad");
-                if ($utlan == "fel") {
-                    $this->view->paintErr("utlånad av någon annan");
-                } elseif ($utlan == "fel2") {
-                    $this->view->paintErr2();
-                } elseif ($utlan == "fel3") {
-                    $this->view->paintErr3();
-                } else {
-                    $this->view->paintConf($utlan, "lånat");
-                }
+        if (isset($_POST['kortid'])) {
+            if (isset($_POST['namn'])) {
+                $this->model->skapaKonto(htmlspecialchars($_POST['kortid']), htmlspecialchars($_POST['namn']));
+                //echo "<script>alert('Kontot är skapat!');</script>";
             }
-            $this->view->paintUtlan("låna");
+            $status = $this->model->checkLogin(htmlspecialchars($_POST['kortid']));
+            if ($status == "newusr") {
+                $this->view->paintNewUsr($_POST['kortid']);
+            } elseif (isset($status)) {
+                if (isset($_POST['bokid'])) {
+                    $utlan = $this->model->lana(htmlspecialchars($_POST['bokid']), "utlånad", $status[0]['lånekortsnr_pk']);
+                    if ($utlan == "fel") {
+                        $this->view->paintErr("utlånad av någon annan");
+                    } elseif ($utlan == "fel2") {
+                        $this->view->paintErr2();
+                    } elseif ($utlan == "fel3") {
+                        $this->view->paintErr3();
+                    } else {
+                        $this->view->paintConf($utlan, "lånat", $status[0]['namn']);
+                    }
+                } 
+                $this->view->paintUtlan($status);
+            }
         } else {
-            $this->view->paintLoginNeeded();
+            $this->view->paintLogin("lana");
         }
         $this->view->paintBottom();
     }
@@ -52,58 +71,70 @@ class controller_startpage {
     public function lamna()
     {
         $this->view->paintTop("lamna");
-        if (isset($_SESSION['username'])) {
-            if (isset($_POST['bokid'])) {
-                $utlan = $this->model->lana(htmlspecialchars($_POST['bokid']), "tillgänglig");
-                if ($utlan == "fel") {
-                    $this->view->paintErr("tillbakalämnad");
-                } elseif ($utlan == "felanvändare") {
-                    $this->view->paintFelAnvandare();
-                } else {
-                    $this->view->paintConf($utlan, "lämnat tillbaka");
-                }
+        if (isset($_POST['bokid'])) {
+            $utlan = $this->model->lana(htmlspecialchars($_POST['bokid']), "tillgänglig", "");
+            if ($utlan == "fel") {
+                $this->view->paintErr("tillbakalämnad");
+            } elseif ($utlan == "fel3") {
+                $this->view->paintErr3();
+            } else {
+                $this->view->paintConf($utlan, "lämnat tillbaka", $utlan['kortid']);
             }
-            $this->view->paintUtlan("lämna tillbaka");
-        } else {
-            $this->view->paintLoginNeeded();
         }
+        $this->view->paintLamna();
         $this->view->paintBottom();
     }
 
     public function minsida()
     {
         $this->view->paintTop("minsida");
-        if (isset($_SESSION['username'])) {
-            if ($_SESSION['role'] == "admin") {
-                $arrBooks = $this->model->minSidaAdm();
-                $this->view->paintMinSidaAdm($arrBooks);
-            } elseif ($_SESSION['role'] == "user") {
-                $arrBooks = $this->model->minSida();
-                $this->view->paintMinSida($arrBooks);
-            }
+        if (isset($_SESSION['role'])) {
+            $arrBooks = $this->model->minSidaAdm();
+            $this->view->paintMinSidaAdm($arrBooks);
+        } elseif (isset($_POST['kortid'])) {
+            $arrBooks = $this->model->minSida(htmlspecialchars($_POST['kortid']));
+            $this->view->paintMinSida($arrBooks);
         } else {
-            //$this->view->paintLoginNeeded();
-            //$this->model->generate_barcodes([3409818409, 2038458034, 83485933495, 3257893499, 324789573489]);
-            //$this->model->generatePDF();
+            $this->view->paintLogin("minsida");
         }
         $this->view->paintBottom();
     }
 
-    public function pdf($nummer, $antal)
+    public function bocker()
     {
-        $this->model->generatePDF($nummer, $antal);
+        $this->view->paintTop("bocker");
+        if (isset($_SESSION['role'])) {
+            if (isset($_POST['bokIdAll'])) {
+                $bok = $this->model->deleteBook(htmlspecialchars($_POST['bokIdAll']), 'all');
+                if ($bok == "fel1") {
+                    $this->view->paintErrRadera1($bok);
+                } else {
+                    $this->view->paintConfRaderaAll($bok);
+                }
+            }
+            $arrBooks = $this->model->getBookList();
+            $this->view->paintBooks($arrBooks);
+        } else {
+            $this->view->paintAdmNeeded();
+        }
+        $this->view->paintBottom("bocker");
+    }
+
+    public function pdf($nummer, $antal, $titel)
+    {
+        $this->model->generatePDF($nummer, $antal, $titel);
     }
 
     public function matain()
     {
         $this->view->paintTop("matain");
-        if (isset($_SESSION['username']) and $_SESSION['role'] == "admin") {
+        if (isset($_SESSION['role'])) {
             if (isset($_POST['isbn']) and isset($_POST['antal'])) {
                 $bok = $this->model->matain(htmlspecialchars($_POST['isbn']), htmlspecialchars($_POST['antal']));
                 if ($bok == "fel") {
                     $this->view->paintErrMataIn($bok);
                 } else {
-                    $this->view->paintConfMataIn($bok);
+                    $this->view->paintConfMataIn($bok, htmlspecialchars($_POST['antal']));
                 }
             }
             $this->view->paintForm();
@@ -116,13 +147,11 @@ class controller_startpage {
     public function radera()
     {
         $this->view->paintTop("radera");
-        if (isset($_SESSION['username']) and $_SESSION['role'] == "admin") {
+        if (isset($_SESSION['role'])) {
             if (isset($_POST['bokId'])) {
-                $bok = $this->model->deleteBook(htmlspecialchars($_POST['bokId']));
+                $bok = $this->model->deleteBook(htmlspecialchars($_POST['bokId']), 'one');
                 if ($bok == "fel1") {
-                    $this->view->paintErrRadera1($bok);
-                } elseif ($bok == "fel2") {
-                    $this->view->paintErrRadera2($bok);
+                    $this->view->paintErr3($bok);
                 } else {
                     $this->view->paintConfRadera($bok);
                 }
@@ -133,19 +162,6 @@ class controller_startpage {
         }
         $this->view->paintBottom();
     }
-
-    public function loggain($username, $password)
-    {
-        $status = $this->model->loggain($username, $password);
-
-        if ($status == "error") {
-            $this->view->paintTop("start");
-            $this->view->paintInloggErr();
-            $this->view->paintBottom();
-            return "error";
-        }
-    }
-
     public function loggaut()
     {
         $this->model->loggaut();
