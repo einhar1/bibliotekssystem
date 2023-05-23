@@ -203,9 +203,9 @@ class model_startpage
         $v = 0;
         while (true) {
             $pdf->AddPage();
-            for ($k = 0; $k < 10; $k++) {
+            for ($k = 0; $k < 6; $k++) {
                 for ($i = 0; $i < 3; $i++) {
-                    $pdf->write1DBarcode(strval($nummer - $v), 'MSI', $i * 60 + 11, $k * 23 + 25, '', 18, 0.4, $style, 'N');
+                    $pdf->write1DBarcode(strval($nummer - $v), 'MSI', $i * 65 + 16, $k * 37 + 47, '', 18, 0.4, $style, 'N');
                     $v++;
                     if ($v == $antal) {
                         break 3;

@@ -4,8 +4,7 @@ ini_set('display_errors', E_ALL);
 ini_set('display_startup_errors', E_ALL);
 header("Access-Control-Allow-Origin: *");
 header('Content-Type:text/html; charset=UTF-8');
-//ladda om sidan var 450:de sekund för att kontrollera om sessionen gått ut och dirigera användaren till startsidan
-header("Refresh:450; url=start");
+header("Refresh:450; url=start"); //ladda om sidan var 15:de minut och skicka tillbaka användaren till startsidan
 mb_internal_encoding('UTF-8');
 mb_http_output('UTF-8');
 

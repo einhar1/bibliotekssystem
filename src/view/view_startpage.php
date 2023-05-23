@@ -33,7 +33,7 @@ class view_startpage
     {
         echo <<< ARTIKEL
             <h1>Välkommen till teknikprogrammets bibliotek!</h1><br>
-            <h4>Här kan du som är lärare se utlånade böcker och lägga in nya böcker i systemet.</h4>
+            <h4>Här kan du som är lärare bland annat se utlånade böcker och lägga in nya böcker i systemet.</h4>
             ARTIKEL;
     }
     public function paintBooks($arrBooks)
