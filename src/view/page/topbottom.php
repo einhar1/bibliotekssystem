@@ -53,6 +53,7 @@ class topbottom
                 visibility: visible;
             }
 
+            /* döljer inmatningsrutan när ett id-kort ska skannas */
             #kort {
                 color: transparent;
                 outline: none;
