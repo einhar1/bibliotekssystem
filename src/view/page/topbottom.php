@@ -24,7 +24,7 @@ class topbottom
             <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
             <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-            <title>Document</title>
+            <title>Teknikprogrammets bibliotek</title>
         </head>
         <style>
             /* Chrome, Safari, Edge, Opera */
@@ -48,6 +48,7 @@ class topbottom
                 position: absolute;
             }
 
+            /* ändrar texten till "logga ut" när muspekaren är över knappen */
             .button:hover #logout {
                 visibility: visible;
             }
@@ -64,6 +65,7 @@ class topbottom
         <body>
             <script>
                 $(document).ready(function() {
+                    //definerar en ny sorterbar och sökbar tabell
                     let table = new DataTable('#utlan', {
                         paging: false,
                         order: [[ 1, "asc" ]]
@@ -78,6 +80,7 @@ class topbottom
                     });
                 });
             </script>
+            <!-- en popup ruta för inloggning -->
             <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -89,7 +92,7 @@ class topbottom
                     <form action="start" method="post">
                         <div class="mb-3">
                             <label for="exampleInputPassword1" class="form-label">Lösenord</label>
-                            <input type="password" class="form-control" id="exampleInputPassword1" name="password" required autofocus>
+                            <input autocomplete='off' type="password" class="form-control" id="exampleInputPassword1" name="password" required autofocus>
                         </div>
                         <button type="submit" class="btn btn-primary">Logga in</button>
                     </form>
@@ -97,6 +100,7 @@ class topbottom
                 </div>
             </div>
             </div>
+            <!-- en popup ruta för att radera böcker -->
             <div class="modal fade" id="modalConf" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -106,7 +110,7 @@ class topbottom
                 </div>
                 <div class="modal-body">
                     <form action="bocker" method="post" id='formConf'>
-                        <input type="hidden" class="form-control" id='inputConf' name="bokIdAll">
+                        <input autocomplete='off' type="hidden" class="form-control" id='inputConf' name="bokIdAll">
                         <button type="submit" class="btn btn-danger">Radera</button>
                     </form>
                 </div>
@@ -122,8 +126,6 @@ class topbottom
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav me-auto">
         TOP;
-
-        //html-koden ovan skapar popup-rutan där man loggar in
 
         //jag vet att jag hade kunnat göra en gemensam funktion för alla undersidor
         //men då hade jag behövt använda väldigt många olika variebler för att få
@@ -239,6 +241,7 @@ class topbottom
         }
         echo "</div>";
 
+        // ändra texten på inloggningsknappen när någon är inloggad
         if (isset($_SESSION["role"])) {
             echo <<< BTN
             <a type="button" href="/Webbserverprog/mvc/public/loggaut" class="btn btn-primary button">

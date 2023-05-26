@@ -4,16 +4,6 @@ namespace App\model;
 
 use TCPDF;
 
-/*
-I efterhand inser jag att det hade varit enklare att skapa en funktion som hämntar titel och författare
-första gången boken läggs in och sedan lagrar det i databasen istället för att hämta det på nytt varje
-gång. Detta hade lett till snabbare laddtider och ett minskat antal requests mot API:t.
-
-Jag är medveten om att jag har flera funktioner som är snarlika. Jag funderade på att slå samman dessa
-till en gemensam funktion, men skillnaderna är endå såpass stora mellan de att det inte skulle bli 
-effektivt.
-*/
-
 class model_startpage
 {
 
@@ -29,6 +19,7 @@ class model_startpage
 
         $books = $this->db->getBooks();
 
+        //lägger alla böcker i en array för att enklare kunna extrahera informationen senare
         foreach ($books as $key => $book) {
             
             $filteredData[$key] = array(
@@ -42,32 +33,24 @@ class model_startpage
 
         }
 
-        //sortera böckerna i bokstavsordnings
-        usort($filteredData, function ($a, $b) {
-            return strcmp($a["title"], $b["title"]);
-        });
-
         return $filteredData;
     }
 
+    //gemensam funktion för att låna och lämna böcker
     public function lana($bokId, $var, $kortid)
     {
         if ($var == "utlånad") {
             $data = $this->db->lanaBok($bokId, $kortid);
-            if (is_array($data)) {
-                $bokinfo = $data['bok'];
-                $kortid = $data['namn'];
-            } else {
-                $bokinfo = $data;
-            }
         } elseif ($var == "tillgänglig") {
             $data = $this->db->lamnaBok($bokId);
-            if (is_array($data)) {
-                $bokinfo = $data['bok'];
-                $kortid = $data['namn'];
-            } else {
-                $bokinfo = $data;
-            }
+        }
+
+        //kontrollerar om det har returnerats ett felmeddelande eller inte
+        if (is_array($data)) {
+            $bokinfo = $data['bok'];
+            $kortid = $data['namn'];
+        } else {
+            $bokinfo = $data;
         }
 
         if ($bokinfo == "fel") {
@@ -90,6 +73,7 @@ class model_startpage
         }
     }
     
+    //se utlån för en elev
     public function minSida($kortid)
     {
         $books = $this->db->hemlan($kortid);
@@ -106,6 +90,7 @@ class model_startpage
         return $filteredData;
     }
 
+    //se alla utlån för lärare
     public function minSidaAdm()
     {
         return $this->db->minSidaAdm();
@@ -113,6 +98,7 @@ class model_startpage
 
     public function matain($ISBN, $antal)
     {
+        //hämtar information om boken från API:et
         $data = file_get_contents("https://libris.kb.se/xsearch?query=isbn:" . $ISBN . "&format=json");
 
         $decodedData = json_decode($data);
@@ -121,13 +107,14 @@ class model_startpage
             return "fel";
         }
 
+        //extraherar den nödvändiga informationen från API:et
         $titel = $decodedData->{'xsearch'}->{'list'}[0]->{'title'};
         $identifier = $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'};
         $streckkodsnr = $this->db->mataIn($ISBN, $antal, $titel, $identifier);
 
         $filteredData = array(
-            'title' => $decodedData->{'xsearch'}->{'list'}[0]->{'title'},
-            'identifier' => $decodedData->{'xsearch'}->{'list'}[0]->{'identifier'},
+            'title' => $titel,
+            'identifier' => $identifier,
             'streckkodsnr' => $streckkodsnr,
             'antal' => $antal
         );
@@ -200,6 +187,7 @@ class model_startpage
             'stretchtext' => 4
         );
 
+        //ritar ut en streckkod för varje bok i ett 6x3 rutnät
         $v = 0;
         while (true) {
             $pdf->AddPage();
@@ -220,6 +208,7 @@ class model_startpage
 
     public function deleteBook($bokId, $var)
     {
+        //kontrollerar om alla exemlar eller endast en ska tas bort
         if ($var == "one") {
             $data = $this->db->deleteBook($bokId);
         } elseif ($var == "all") {
@@ -245,6 +234,8 @@ class model_startpage
     {
         $this->db->skapaKonto($kortid, $namn);
     }
+
+    //kontrollerar om en användare har ett konto
     public function checkLogin($kortid)
     {
         $status = $this->db->checkLogin($kortid);

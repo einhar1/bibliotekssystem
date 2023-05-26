@@ -31,11 +31,13 @@ class dbcon
         }
     }
 
+    //hämtar alla böcker från databasen
     public function getBooks()
     {
         $stmt = $this->pdo->query('SELECT * , sum(case `status` when "tillgänglig" then 1 else 0 end) "tillgänglig" , COUNT(*) "totalt" FROM böcker group by ISBN');
         return $stmt->fetchAll();
     }
+
     public function lanaBok($bokId, $kortid)
     {
         $stmt = $this->pdo->query('SELECT `status` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
@@ -59,6 +61,7 @@ class dbcon
         }
         return "fel3";
     }
+
     public function lamnaBok($bokId)
     {
         $stmt = $this->pdo->query('SELECT `status` FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
@@ -80,6 +83,8 @@ class dbcon
             return "fel3";
         }
     }
+
+    //hämtar alla lånade böcker för en användare
     public function hemlan($kortid)
     {
         $stmt = $this->pdo->query('SELECT * FROM utlån where lånekortsnr_fk = "' . $kortid . '"');
@@ -91,6 +96,8 @@ class dbcon
         }
         return $books;
     }
+
+    //hämtar alla böcker som är utlånade
     public function minSidaAdm()
     {
         $stmt = $this->pdo->query('SELECT * FROM utlån');
@@ -112,6 +119,8 @@ class dbcon
         }
         return $result;
     }
+
+    //lägger in en ny bok i databasen
     public function mataIn($ISBN, $antal, $titel, $identifier)
     { 
         for ($i=0; $i < $antal; $i++) {
@@ -119,6 +128,8 @@ class dbcon
         }
         return $this->pdo->lastInsertId();
     }
+
+    //tar bort en bok från databasen
     public function deleteBook($bokId)
     {
         $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE streckkodsnr_pk=' . $bokId);
@@ -132,6 +143,8 @@ class dbcon
             return "fel1";
         }
     }
+
+    //tar bort alla böcker med ett visst ISBN från databasen
     public function deleteBookAll($bokId)
     {
         $stmt = $this->pdo->query('SELECT * FROM `böcker` WHERE ISBN = ' . $bokId);
@@ -147,6 +160,8 @@ class dbcon
             return "fel1";
         }
     }
+
+    //kontrollerar om en användare redan har ett konto
     public function checkLogin($kortid)
     {
         $stmt = $this->pdo->query('SELECT * FROM `låntagare` WHERE `lånekortsnr_pk` = "' . $kortid . '"');
@@ -157,10 +172,14 @@ class dbcon
             return $stmt->fetchAll();
         }
     }
+
+    //skapar ett nytt användarkonto
     public function skapaKonto($kortid, $namn)
     {
         $this->pdo->query("INSERT INTO `låntagare` (`lånekortsnr_pk`, `namn`) VALUES ('" . $kortid . "', '" . $namn . "')");
     }
+
+    //kontrollerar inloggning för lärare
     public function loggain($password)
     {
         $stmt = $this->pdo->query('SELECT * FROM `adminlösen`');

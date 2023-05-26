@@ -63,7 +63,7 @@ class view_startpage
                 <td>" . $value['countTot'] . "</td>
                 <td><button onclick='clickDel(" . $value['ISBN'] . ")' type='button' id='confbtn' class='btn btn-danger' data-bs-toggle='modal' data-bs-target='#modalConf'>Radera</button></td>
                 </tr>";
-            //jag är medveten om att jag har inline javascript här, men jag hitade inget annat sätt att skicka med ISBN-nummret till funktionen.
+                //jag är medveten om att jag har inline javascript här, men jag hitade inget annat sätt att skicka med ISBN-nummret till funktionen.
         }
         echo <<< ARTIKEL
                 </tbody>
@@ -74,7 +74,7 @@ class view_startpage
     public function paintMinSida($arrBooks)
     {
         echo <<< ARTIKEL
-            <h3><u>Du lånat följande böcker.</u></h3>
+            <h3><u>Du har lånat följande böcker.</u></h3>
             <table class="table table-hover" id="utlan">
                 <thead>
                     <tr>
@@ -138,14 +138,17 @@ class view_startpage
     {
         $namn = $data[0]['namn'];
         $kortid = $data[0]['lånekortsnr_pk'];
+
+        //har en gömd submit-knapp för att kunna använda enter för att skicka in formuläret
+        //har satt autocomplete till off på alla inputs även om det inte behövs för alla
         echo <<< ARTICLE
         Inloggad som $namn.<br>
         Vänligen skanna boken du vill låna.
         <form action="lana" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus rquired>
-                <input type="text" name="kortid" class="form-control" value="$kortid" hidden>
-                <input type="submit" hidden>
+                <input autocomplete='off' type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus rquired>
+                <input autocomplete='off' type="text" name="kortid" class="form-control" value="$kortid" hidden>
+                <input autocomplete='off' type="submit" hidden>
             </div>
         </form>
         ARTICLE;
@@ -157,13 +160,11 @@ class view_startpage
         Vänligen skanna boken du vill lämna tillbaka.
         <form action="lamna" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus required>
+                <input autocomplete='off' type="number" name="bokid" class="form-control" placeholder="Streckkodsnummer" autofocus required>
             </div>
         </form>
         ARTICLE;
     }
-
-    //nedan följer alla felmeddelanden och bekräftelsemeddelanden som kan skrivas ut
 
     public function paintErr($var)
     {
@@ -187,9 +188,9 @@ class view_startpage
         <b>Varje bok har blivit tilldelad ett unikt streckkodsnummer. Klicka på knappen nedan för att skriva ut streckkoderna och klistra sedan fast en streckkod på varje bok.</b>
         <form action='matain' target='_blank' method='POST'>
             <div class='mb-3 mt-3'>
-                <input type='number' name='barcode' class='form-control' value='" . $utlan["streckkodsnr"] . "' hidden>
-                <input type='number' name='amount' class='form-control' value='" . $utlan["antal"] . "' hidden>
-                <input type='text' name='titel' class='form-control' value='" . $utlan["title"] . "' hidden>
+                <input autocomplete='off' type='number' name='barcode' class='form-control' value='" . $utlan["streckkodsnr"] . "' hidden>
+                <input autocomplete='off' type='number' name='amount' class='form-control' value='" . $utlan["antal"] . "' hidden>
+                <input autocomplete='off' type='text' name='titel' class='form-control' value='" . $utlan["title"] . "' hidden>
                 <button type='submit' class='btn btn-primary'>Skriv ut streckkoder</button>
             </div>
         </form>";
@@ -204,7 +205,7 @@ class view_startpage
     }
     public function paintErrMataIn()
     {
-        echo "<h5>Ogilltit ISBN-nummer! (finns inte i Libris databas)</h5>";
+        echo "<h5>ISBN-nummret finns inte i Libris databas!</h5>";
     }
     public function paintForm()
     {
@@ -212,10 +213,10 @@ class view_startpage
         Vänligen skanna boken du vill lägga till och ange antal exemplar.
         <form action="matain" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="isbn" class="form-control" placeholder="ISBN" autofocus required>
+                <input autocomplete='off' type="number" name="isbn" class="form-control" placeholder="ISBN" autofocus required>
             </div>
             <div class="mb-3 mt-3">
-                <input type="number" name="antal" class="form-control" placeholder="Antal" required>
+                <input autocomplete='off' type="number" name="antal" class="form-control" placeholder="Antal" required>
             </div>
             <button class="btn btn-primary" type="submit">Lägg till</button>
         </form>
@@ -224,10 +225,11 @@ class view_startpage
     public function paintLogin($var)
     {
         echo <<< ARTICLE
-        Vänligen skanna ditt id-kort.
+        Vänligen skanna ditt id-kort.<br>
+        (Om det inte fungerar, se till att programmet UIDtoKeyboard är igång)
         <form action="$var" method="POST">
             <div class="mb-3 mt-3">
-                <input type="password" id="kort" name="kortid" autofocus required>
+                <input autocomplete='off' type="password" id="kort" name="kortid" autofocus required>
             </div>
         </form>
         ARTICLE;
@@ -238,9 +240,9 @@ class view_startpage
         Skriv in ditt för- och efternamn för att skapa ett nytt användarkonto.
         <form action="lana" method="POST">
             <div class="mb-3 mt-3">
-                <input type="text" name="namn" placeholder="Namn" class="form-control" autofocus required>
-                <input type="text" name="kortid" class="form-control" value="$kortid" hidden>
-                <input type="submit" hidden>
+                <input autocomplete='off' type="text" name="namn" placeholder="Namn" class="form-control" autofocus required>
+                <input autocomplete='off' type="text" name="kortid" class="form-control" value="$kortid" hidden>
+                <input autocomplete='off' type="submit" hidden>
             </div>
         </form>
         ARTICLE;
@@ -253,7 +255,7 @@ class view_startpage
         <br>OBS! Den här funktionen tar endast bort det skannade exemplaret, för att ta bort alla exemplar av en bok, använd knappen "Radera" i listan över böcker.
         <form action="radera" method="POST">
             <div class="mb-3 mt-3">
-                <input type="number" name="bokId" class="form-control" placeholder="Streckkodsnummer" required>
+                <input autocomplete='off' type="number" name="bokId" class="form-control" placeholder="Streckkodsnummer" required>
             </div>
         </form>
         ARTICLE;

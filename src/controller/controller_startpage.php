@@ -17,6 +17,7 @@ class controller_startpage {
 
     public function start()
     {
+        //hanterar inloggning
         $status = null;
         if (isset($_POST['password'])) {
             $status = $this->model->loggain(htmlspecialchars($_POST['password']));
@@ -25,6 +26,8 @@ class controller_startpage {
         if ($status == "error") {
             $this->view->paintInloggErr();
         }
+
+        //skriver ut olika välkommstmeddelanden beroende på om användaren är en lärare eller inte
         if (isset($_SESSION['role'])) {
             $this->view->paintWelcomeAdm();
         } else {
@@ -33,23 +36,24 @@ class controller_startpage {
         $this->view->paintBottom();
     }
 
-    //vid varje funktion förutom startsidan kontrollerar jag först att användaren är inloggad och om 
-    //det krävs admin-behörighet
-
+    //låna bok
     public function lana()
     {
         $this->view->paintTop("lana");
+        //kontrollerar först om användaren har skannat sitt kort
         if (isset($_POST['kortid'])) {
+            //om kortet inte finns i databasen får användaren skapa ett nytt konto
             if (isset($_POST['namn'])) {
                 $this->model->skapaKonto(htmlspecialchars($_POST['kortid']), htmlspecialchars($_POST['namn']));
-                //echo "<script>alert('Kontot är skapat!');</script>";
             }
             $status = $this->model->checkLogin(htmlspecialchars($_POST['kortid']));
             if ($status == "newusr") {
                 $this->view->paintNewUsr($_POST['kortid']);
             } elseif (isset($status)) {
+                //om användaren skannat sitt kort och sedan skannat en bok så lånas boken ut
                 if (isset($_POST['bokid'])) {
                     $utlan = $this->model->lana(htmlspecialchars($_POST['bokid']), "utlånad", $status[0]['lånekortsnr_pk']);
+                    //olika felmeddelanden som kan skrivas ut
                     if ($utlan == "fel") {
                         $this->view->paintErr("utlånad av någon annan");
                     } elseif ($utlan == "fel2") {
@@ -59,15 +63,18 @@ class controller_startpage {
                     } else {
                         $this->view->paintConf($utlan, "lånat", $status[0]['namn']);
                     }
-                } 
+                }
+                //om kortet är skannat men ingen bok är skannad så visas formuläret för utlåning
                 $this->view->paintUtlan($status);
             }
         } else {
+            //om användaren inte skannat sitt kort visas formuläret för att logga in
             $this->view->paintLogin("lana");
         }
         $this->view->paintBottom();
     }
 
+    //ungefär samma process som att låna en bok fast utan inloggning
     public function lamna()
     {
         $this->view->paintTop("lamna");
@@ -85,6 +92,7 @@ class controller_startpage {
         $this->view->paintBottom();
     }
 
+    //om användaren är en lärare så visas alla utlånade böcker, annars visas bara användarens egna böcker
     public function minsida()
     {
         $this->view->paintTop("minsida");
@@ -100,6 +108,7 @@ class controller_startpage {
         $this->view->paintBottom();
     }
 
+    //visar alla böcker i databasen och möjliggör borttagning av böcker
     public function bocker()
     {
         $this->view->paintTop("bocker");
@@ -144,6 +153,7 @@ class controller_startpage {
         $this->view->paintBottom();
     }
 
+    //om man vill radera endast en bok
     public function radera()
     {
         $this->view->paintTop("radera");
